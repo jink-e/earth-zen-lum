@@ -1,0 +1,15 @@
+{
+  "name": "此刻地球 · 地球正念观想",
+  "short_name": "此刻地球",
+  "description": "结合当前昼夜地球、呼吸觉察与和平观想的正念应用。",
+  "lang": "zh-CN",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#050a14",
+  "theme_color": "#07101f",
+  "orientation": "any",
+  "icons": [
+    { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
