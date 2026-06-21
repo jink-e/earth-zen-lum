@@ -102,6 +102,7 @@ export class EarthView implements EarthController {
   private lastSolarUpdate = 0;
   private reduceMotion = false;
   private meditationActive = false;
+  private meditationDriftTimer: number | null = null;
   private targetBreath = 0;
   private displayedBreath = 0;
   private cloudOffset = 0;
@@ -331,6 +332,14 @@ export class EarthView implements EarthController {
     this.markerGroup.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), this.userVector);
   }
 
+  private alignCameraToUser(distance = this.camera.position.length()): void {
+    this.camera.position.copy(this.userVector.clone().multiplyScalar(distance));
+    this.camera.up.set(0, 1, 0);
+    this.camera.lookAt(0, 0, 0);
+    this.controls.target.set(0, 0, 0);
+    this.controls.update();
+  }
+
   private resize(): void {
     const width = Math.max(1, this.container.clientWidth);
     const height = Math.max(1, this.container.clientHeight);
@@ -442,17 +451,34 @@ export class EarthView implements EarthController {
     this.meditationActive = true;
     this.markerGroup.visible = false;
     this.controls.enabled = false;
-    this.recenter(this.getMeditationDistance(2.65), 900);
-    window.setTimeout(() => {
+    this.cameraTween = null;
+    if (this.meditationDriftTimer !== null) window.clearTimeout(this.meditationDriftTimer);
+
+    window.requestAnimationFrame(() => {
+      if (!this.meditationActive) return;
+      this.resize();
+      this.alignCameraToUser();
+      this.recenter(this.getMeditationDistance(2.65), 900);
+    });
+
+    this.meditationDriftTimer = window.setTimeout(() => {
       if (this.meditationActive) this.recenter(this.getMeditationDistance(3.72), this.reduceMotion ? 1 : 22_000);
+      this.meditationDriftTimer = null;
     }, this.reduceMotion ? 20 : 1150);
   }
 
   endMeditation(): void {
+    if (this.meditationDriftTimer !== null) {
+      window.clearTimeout(this.meditationDriftTimer);
+      this.meditationDriftTimer = null;
+    }
     this.meditationActive = false;
     this.markerGroup.visible = true;
     this.controls.enabled = true;
     this.targetBreath = 0;
+    this.cameraTween = null;
+    this.resize();
+    this.alignCameraToUser();
     this.recenter(3.25, 1400);
   }
 
@@ -479,6 +505,7 @@ export class EarthView implements EarthController {
   dispose(): void {
     this.disposed = true;
     this.renderer.setAnimationLoop(null);
+    if (this.meditationDriftTimer !== null) window.clearTimeout(this.meditationDriftTimer);
     this.resizeObserver.disconnect();
     this.controls.dispose();
     this.renderer.dispose();
