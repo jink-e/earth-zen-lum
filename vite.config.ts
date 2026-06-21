@@ -1,0 +1,18 @@
+import { defineConfig } from 'vite';
+import { viteSingleFile } from 'vite-plugin-singlefile';
+
+export default defineConfig({
+  base: './',
+  plugins: [viteSingleFile()],
+  build: {
+    target: 'es2022',
+    assetsInlineLimit: 10_000_000,
+    cssCodeSplit: false,
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        inlineDynamicImports: true
+      }
+    }
+  }
+});
