@@ -1,3 +1,5 @@
+import type { AppLanguage } from './storage';
+
 export interface MeditationCue {
   at: number;
   text: string;
@@ -76,8 +78,79 @@ export const MEDITATION_PLANS: Record<number, MeditationPlan> = {
   }
 };
 
-export function getMeditationPlan(minutes: number): MeditationPlan {
-  return MEDITATION_PLANS[minutes] ?? MEDITATION_PLANS[7]!;
+export const ENGLISH_MEDITATION_PLANS: Record<number, MeditationPlan> = {
+  3: {
+    minutes: 3,
+    title: 'Return to now',
+    subtitle: 'Begin with the body and notice Earth now',
+    cues: [
+      { at: 0, text: 'Let the chair, bed, or ground steadily support your body.', breath: 'Natural breath' },
+      { at: 0.09, text: 'There is no need to change the breath. Simply know that you are breathing.', breath: 'Inhale · exhale' },
+      { at: 0.2, text: 'Feel the ground beneath you, and the wide Earth beneath the ground.', breath: 'Feel support' },
+      { at: 0.34, text: 'Imagine the view moving quietly upward and farther away from where you are.', breath: 'Slowly widen' },
+      { at: 0.49, text: 'See ocean, land, cloud, and the moving line between day and night.', breath: 'See the whole' },
+      { at: 0.64, text: 'The world does not need to be perfect. Let this moment of Earth be seen as it is.', breath: 'No need to fix' },
+      { at: 0.78, text: 'May I be peaceful. May others be peaceful. May all life be met with care.', breath: 'Send goodwill' },
+      { at: 0.91, text: 'Bring a little of this spaciousness back to the body, and to one small thing you can do today.', breath: 'Return slowly' },
+      { at: 0.98, text: 'Gently move the fingers. When you are ready, open your eyes.', breath: 'Back to now' }
+    ]
+  },
+  7: {
+    minutes: 7,
+    title: 'Embrace Earth',
+    subtitle: 'A full Earth mindfulness practice',
+    cues: [
+      { at: 0, text: 'Find a posture that does not need effort to hold. Let the shoulders soften.', breath: 'Settle the body' },
+      { at: 0.055, text: 'Notice one inhale and one exhale. There is no need to deepen the breath.', breath: 'Natural breath' },
+      { at: 0.12, text: 'Feel the contact between body and ground. Right now, you are sitting somewhere on Earth.', breath: 'Feel support' },
+      { at: 0.2, text: 'In the mind, see your room, your street, and your city. It does not need to be clear.', breath: 'See nearby' },
+      { at: 0.29, text: 'The view continues to widen. Familiar boundaries become smaller as oceans and land come into view.', breath: 'Slowly widen' },
+      { at: 0.38, text: 'See daylight here and night elsewhere. They exist at the same time.', breath: 'Hold light and dark' },
+      { at: 0.47, text: 'Think of people waking up, and people resting.', breath: 'Remember others' },
+      { at: 0.56, text: 'Think of rivers, forests, animals, and countless lives you do not see.', breath: 'Widen care' },
+      { at: 0.65, text: 'The world is not perfect. You do not have to deny difficulty or carry it alone.', breath: 'Allow what is true' },
+      { at: 0.74, text: 'Quietly say: may I have peace and understanding.', breath: 'May I be peaceful' },
+      { at: 0.81, text: 'May the people I love, and people different from me, have peace and understanding.', breath: 'May others be peaceful' },
+      { at: 0.88, text: 'May life on this planet have less harm and more care.', breath: 'May Earth be peaceful' },
+      { at: 0.94, text: 'Let the view slowly return to where you are. Feel the body still here.', breath: 'Return slowly' },
+      { at: 0.985, text: 'Carry a small quietness back into today.', breath: 'Back to now' }
+    ]
+  },
+  12: {
+    minutes: 12,
+    title: 'Peace practice',
+    subtitle: 'From personal steadiness to our shared home',
+    cues: [
+      { at: 0, text: 'Let the body settle. Allow this time to be free from solving anything.', breath: 'Settle the body' },
+      { at: 0.045, text: 'Notice where the breath is easiest to feel: the nose, chest, or belly.', breath: 'Notice breath' },
+      { at: 0.1, text: 'As you inhale, know that you are inhaling. As you exhale, know that you are exhaling.', breath: 'Inhale · exhale' },
+      { at: 0.16, text: 'Feel the body’s weight held by the Earth. You do not need to float or hold yourself alone.', breath: 'Feel support' },
+      { at: 0.22, text: 'Imagine a gentle point of light where you are, only to remind you: you are here.', breath: 'I am here' },
+      { at: 0.29, text: 'The view rises slowly. See nearby roofs, roads, mountains, or coastlines.', breath: 'See nearby' },
+      { at: 0.36, text: 'Continue widening until the whole Earth is in view. Let it be real, not perfect.', breath: 'See the whole' },
+      { at: 0.43, text: 'See daylight meeting night. Light and dark do not fight; they take turns passing through.', breath: 'Hold light and dark' },
+      { at: 0.5, text: 'Think of people sharing daylight with you: some busy, some joyful, some carrying difficulty.', breath: 'See daylight' },
+      { at: 0.57, text: 'Think of people in night: some sleeping, some working, some unable to rest.', breath: 'See night' },
+      { at: 0.64, text: 'Think of people with different languages, beliefs, and ways of living. Difference also belongs to one home.', breath: 'Hold difference' },
+      { at: 0.7, text: 'Think of forests, oceans, soil, insects, and animals. Humans are not Earth’s only residents.', breath: 'Care for life' },
+      { at: 0.76, text: 'Bring goodwill first to yourself: may I be safe, understood, and able to care for this moment.', breath: 'May I be peaceful' },
+      { at: 0.82, text: 'Bring goodwill to those close to you: may they be safe and understood.', breath: 'May loved ones be peaceful' },
+      { at: 0.87, text: 'Bring goodwill to strangers, and even to people who disagree with you.', breath: 'May all be peaceful' },
+      { at: 0.92, text: 'May conflict lessen a little. May listening grow a little. May vulnerable life be cared for.', breath: 'May peace grow' },
+      { at: 0.96, text: 'You do not need to carry the whole world. Choose one small act of care for today.', breath: 'Return to action' },
+      { at: 0.988, text: 'Feel the breath and the body. When you are ready, open your eyes and return to now.', breath: 'Return slowly' }
+    ]
+  }
+};
+
+const PLANS_BY_LANGUAGE: Record<AppLanguage, Record<number, MeditationPlan>> = {
+  zh: MEDITATION_PLANS,
+  en: ENGLISH_MEDITATION_PLANS
+};
+
+export function getMeditationPlan(minutes: number, language: AppLanguage = 'zh'): MeditationPlan {
+  const plans = PLANS_BY_LANGUAGE[language] ?? MEDITATION_PLANS;
+  return plans[minutes] ?? plans[7]!;
 }
 
 export class AmbientSound {
@@ -201,17 +274,20 @@ export class GuidanceVoice {
     if (!enabled) this.cancel();
   }
 
-  speak(text: string): void {
+  speak(text: string, language: AppLanguage = 'zh'): void {
     if (!this.enabled || !('speechSynthesis' in window)) return;
     this.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'zh-CN';
-    utterance.rate = 0.78;
-    utterance.pitch = 0.92;
+    utterance.lang = language === 'en' ? 'en-US' : 'zh-CN';
+    utterance.rate = language === 'en' ? 0.84 : 0.78;
+    utterance.pitch = language === 'en' ? 0.96 : 0.92;
     utterance.volume = 0.82;
     const voices = window.speechSynthesis.getVoices();
-    const preferred = voices.find((voice) => /zh-CN|普通话|Mandarin/i.test(`${voice.lang} ${voice.name}`))
-      ?? voices.find((voice) => /^zh/i.test(voice.lang));
+    const preferred = language === 'en'
+      ? voices.find((voice) => /en-US|English|Samantha|Alex/i.test(`${voice.lang} ${voice.name}`))
+        ?? voices.find((voice) => /^en/i.test(voice.lang))
+      : voices.find((voice) => /zh-CN|普通话|Mandarin/i.test(`${voice.lang} ${voice.name}`))
+        ?? voices.find((voice) => /^zh/i.test(voice.lang));
     if (preferred) utterance.voice = preferred;
     window.speechSynthesis.speak(utterance);
   }

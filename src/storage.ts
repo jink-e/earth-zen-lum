@@ -1,4 +1,5 @@
 export type LocationSource = 'default' | 'gps' | 'preset' | 'manual';
+export type AppLanguage = 'zh' | 'en';
 
 export interface AppSettings {
   lat: number;
@@ -10,6 +11,7 @@ export interface AppSettings {
   voiceEnabled: boolean;
   ambientEnabled: boolean;
   reduceMotion: boolean;
+  language: AppLanguage;
 }
 
 export interface SessionRecord {
@@ -24,28 +26,29 @@ export interface SessionRecord {
 
 export interface LocationPreset {
   name: string;
+  nameEn: string;
   lat: number;
   lon: number;
   timeZone?: string;
 }
 
 export const LOCATION_PRESETS: LocationPreset[] = [
-  { name: '北京', lat: 39.9042, lon: 116.4074, timeZone: 'Asia/Shanghai' },
-  { name: '上海', lat: 31.2304, lon: 121.4737, timeZone: 'Asia/Shanghai' },
-  { name: '广州', lat: 23.1291, lon: 113.2644, timeZone: 'Asia/Shanghai' },
-  { name: '成都', lat: 30.5728, lon: 104.0668, timeZone: 'Asia/Shanghai' },
-  { name: '香港', lat: 22.3193, lon: 114.1694, timeZone: 'Asia/Hong_Kong' },
-  { name: '台北', lat: 25.033, lon: 121.5654, timeZone: 'Asia/Taipei' },
-  { name: '东京', lat: 35.6762, lon: 139.6503, timeZone: 'Asia/Tokyo' },
-  { name: '首尔', lat: 37.5665, lon: 126.978, timeZone: 'Asia/Seoul' },
-  { name: '新加坡', lat: 1.3521, lon: 103.8198, timeZone: 'Asia/Singapore' },
-  { name: '悉尼', lat: -33.8688, lon: 151.2093, timeZone: 'Australia/Sydney' },
-  { name: '伦敦', lat: 51.5074, lon: -0.1278, timeZone: 'Europe/London' },
-  { name: '巴黎', lat: 48.8566, lon: 2.3522, timeZone: 'Europe/Paris' },
-  { name: '纽约', lat: 40.7128, lon: -74.006, timeZone: 'America/New_York' },
-  { name: '洛杉矶', lat: 34.0522, lon: -118.2437, timeZone: 'America/Los_Angeles' },
-  { name: '温哥华', lat: 49.2827, lon: -123.1207, timeZone: 'America/Vancouver' },
-  { name: '圣保罗', lat: -23.5505, lon: -46.6333, timeZone: 'America/Sao_Paulo' }
+  { name: '北京', nameEn: 'Beijing', lat: 39.9042, lon: 116.4074, timeZone: 'Asia/Shanghai' },
+  { name: '上海', nameEn: 'Shanghai', lat: 31.2304, lon: 121.4737, timeZone: 'Asia/Shanghai' },
+  { name: '广州', nameEn: 'Guangzhou', lat: 23.1291, lon: 113.2644, timeZone: 'Asia/Shanghai' },
+  { name: '成都', nameEn: 'Chengdu', lat: 30.5728, lon: 104.0668, timeZone: 'Asia/Shanghai' },
+  { name: '香港', nameEn: 'Hong Kong', lat: 22.3193, lon: 114.1694, timeZone: 'Asia/Hong_Kong' },
+  { name: '台北', nameEn: 'Taipei', lat: 25.033, lon: 121.5654, timeZone: 'Asia/Taipei' },
+  { name: '东京', nameEn: 'Tokyo', lat: 35.6762, lon: 139.6503, timeZone: 'Asia/Tokyo' },
+  { name: '首尔', nameEn: 'Seoul', lat: 37.5665, lon: 126.978, timeZone: 'Asia/Seoul' },
+  { name: '新加坡', nameEn: 'Singapore', lat: 1.3521, lon: 103.8198, timeZone: 'Asia/Singapore' },
+  { name: '悉尼', nameEn: 'Sydney', lat: -33.8688, lon: 151.2093, timeZone: 'Australia/Sydney' },
+  { name: '伦敦', nameEn: 'London', lat: 51.5074, lon: -0.1278, timeZone: 'Europe/London' },
+  { name: '巴黎', nameEn: 'Paris', lat: 48.8566, lon: 2.3522, timeZone: 'Europe/Paris' },
+  { name: '纽约', nameEn: 'New York', lat: 40.7128, lon: -74.006, timeZone: 'America/New_York' },
+  { name: '洛杉矶', nameEn: 'Los Angeles', lat: 34.0522, lon: -118.2437, timeZone: 'America/Los_Angeles' },
+  { name: '温哥华', nameEn: 'Vancouver', lat: 49.2827, lon: -123.1207, timeZone: 'America/Vancouver' },
+  { name: '圣保罗', nameEn: 'Sao Paulo', lat: -23.5505, lon: -46.6333, timeZone: 'America/Sao_Paulo' }
 ];
 
 const SETTINGS_KEY = 'earthMindfulness.settings.v1';
@@ -85,7 +88,8 @@ export function defaultSettings(): AppSettings {
     reminderTime: '20:30',
     voiceEnabled: true,
     ambientEnabled: true,
-    reduceMotion: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+    reduceMotion: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false,
+    language: 'zh'
   };
 }
 
@@ -106,6 +110,7 @@ export function loadSettings(): AppSettings {
       ...parsed,
       lat: Number.isFinite(lat) ? Math.max(-90, Math.min(90, lat)) : defaults.lat,
       lon: Number.isFinite(lon) ? Math.max(-180, Math.min(180, lon)) : defaults.lon,
+      language: parsed.language === 'en' ? 'en' : 'zh',
       reminderTime: /^([01]\d|2[0-3]):[0-5]\d$/.test(parsed.reminderTime ?? '')
         ? parsed.reminderTime!
         : defaults.reminderTime

@@ -1,5 +1,6 @@
 import './styles.css';
 import { createEarthView } from './earth';
+import { UI_TEXT } from './i18n';
 import { AmbientSound, getMeditationPlan, GuidanceVoice, type MeditationPlan } from './meditation';
 import {
   LOCATION_PRESETS,
@@ -18,6 +19,9 @@ import {
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('App root not found');
+
+let settings: AppSettings = loadSettings();
+const text = () => UI_TEXT[settings.language];
 
 const icon = (path: string): string => `
   <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
@@ -39,20 +43,53 @@ const ICONS = {
   install: icon('M12 3v12m0 0 4-4m-4 4-4-4M5 19h14')
 };
 
+function presetName(preset: (typeof LOCATION_PRESETS)[number]): string {
+  return settings.language === 'en' ? preset.nameEn : preset.name;
+}
+
+function formatDurationLabel(minutes: number): string {
+  const copy = text();
+  return settings.language === 'en' ? `${minutes} ${copy.minuteUnit}` : `${minutes} ${copy.minuteUnit}`;
+}
+
+const MOOD_KEYS = ['calm', 'warm', 'spacious', 'heavy', 'unchanged'] as const;
+type MoodKey = (typeof MOOD_KEYS)[number];
+
+const LEGACY_MOODS: Record<string, MoodKey> = {
+  平静: 'calm',
+  温暖: 'warm',
+  开阔: 'spacious',
+  沉重: 'heavy',
+  无明显变化: 'unchanged'
+};
+
+function isMoodKey(value: string): value is MoodKey {
+  return (MOOD_KEYS as readonly string[]).includes(value);
+}
+
+function moodLabel(mood?: string): string | undefined {
+  if (!mood) return undefined;
+  const key = isMoodKey(mood) ? mood : LEGACY_MOODS[mood];
+  return key ? text().moods[key] : mood;
+}
+
+const copy = text();
+const initialPlans = [3, 7, 12].map((minutes) => getMeditationPlan(minutes, settings.language));
+
 app.innerHTML = `
   <div class="app-shell" id="appShell">
     <div class="space-backdrop" aria-hidden="true"></div>
     <div class="earth-stage" id="earthStage"></div>
 
     <header class="topbar">
-      <a class="brand" href="#" aria-label="此刻地球首页">
+      <a class="brand" href="#" aria-label="${copy.brandHomeAria}">
         <span class="brand-mark"><span></span></span>
-        <span>此刻地球</span>
+        <span>${copy.brand}</span>
       </a>
       <div class="top-actions">
-        <button class="icon-button install-button" id="installButton" type="button" hidden aria-label="安装应用" title="安装应用">${ICONS.install}</button>
-        <button class="icon-button" id="recenterButton" type="button" aria-label="回到我的位置" title="回到我的位置">${ICONS.target}</button>
-        <button class="icon-button" id="settingsButton" type="button" aria-label="打开设置" title="设置">${ICONS.settings}</button>
+        <button class="icon-button install-button" id="installButton" type="button" hidden aria-label="${copy.install}" title="${copy.install}">${ICONS.install}</button>
+        <button class="icon-button" id="recenterButton" type="button" aria-label="${copy.recenter}" title="${copy.recenter}">${ICONS.target}</button>
+        <button class="icon-button" id="settingsButton" type="button" aria-label="${copy.settingsButton}" title="${copy.settingsButton}">${ICONS.settings}</button>
       </div>
     </header>
 
@@ -60,10 +97,10 @@ app.innerHTML = `
       <section class="hero-card" aria-labelledby="heroTitle">
         <div class="eyebrow-row">
           <span class="live-dot" aria-hidden="true"></span>
-          <span id="weekdayTag">此刻 · 真实昼夜</span>
+          <span id="weekdayTag">${copy.heroEyebrow}</span>
         </div>
-        <h1 id="heroTitle">看见此刻的地球<br />也看见此刻的自己</h1>
-        <p class="now-line" id="nowLine">正在计算你所在位置的昼夜状态…</p>
+        <h1 id="heroTitle">${copy.heroTitle}</h1>
+        <p class="now-line" id="nowLine">${copy.nowLoading}</p>
         <div class="local-time-wrap">
           <time class="local-time" id="localTime">--:--</time>
           <div>
@@ -72,64 +109,64 @@ app.innerHTML = `
           </div>
         </div>
         <button class="location-pill" id="locationButton" type="button">
-          ${ICONS.location}<span id="locationLabel">获取位置</span>
+          ${ICONS.location}<span id="locationLabel">${copy.getLocation}</span>
         </button>
       </section>
 
       <section class="practice-panel" aria-labelledby="practiceTitle">
         <div class="panel-heading">
           <div>
-            <p class="section-kicker">正念观想</p>
-            <h2 id="practiceTitle">留几分钟给地球</h2>
+            <p class="section-kicker">${copy.practiceKicker}</p>
+            <h2 id="practiceTitle">${copy.practiceTitle}</h2>
           </div>
-          <button class="history-button" id="historyButton" type="button">${ICONS.history}<span id="weekStats">本周 0 次</span></button>
+          <button class="history-button" id="historyButton" type="button">${ICONS.history}<span id="weekStats">${copy.weekStatsEmpty}</span></button>
         </div>
 
         <div class="duration-grid">
           <button class="duration-card" type="button" data-minutes="3">
-            <span class="duration-number">3</span><span class="duration-unit">分钟</span>
-            <strong>回到此刻</strong><small>短暂安顿身心</small>
+            <span class="duration-number">3</span><span class="duration-unit">${copy.minuteUnit}</span>
+            <strong>${initialPlans[0]!.title}</strong><small>${initialPlans[0]!.subtitle}</small>
           </button>
           <button class="duration-card featured" type="button" data-minutes="7">
-            <span class="recommended">推荐</span>
-            <span class="duration-number">7</span><span class="duration-unit">分钟</span>
-            <strong>拥抱地球</strong><small>完整地球观想</small>
+            <span class="recommended">${copy.recommended}</span>
+            <span class="duration-number">7</span><span class="duration-unit">${copy.minuteUnit}</span>
+            <strong>${initialPlans[1]!.title}</strong><small>${initialPlans[1]!.subtitle}</small>
           </button>
           <button class="duration-card" type="button" data-minutes="12">
-            <span class="duration-number">12</span><span class="duration-unit">分钟</span>
-            <strong>和平观想</strong><small>扩展善意与关怀</small>
+            <span class="duration-number">12</span><span class="duration-unit">${copy.minuteUnit}</span>
+            <strong>${initialPlans[2]!.title}</strong><small>${initialPlans[2]!.subtitle}</small>
           </button>
         </div>
 
         <button class="wednesday-card" id="wednesdayCard" type="button">
           <span class="wednesday-orbit" aria-hidden="true"><span></span></span>
           <span class="wednesday-copy">
-            <small id="wednesdayEyebrow">每周三</small>
-            <strong id="wednesdayTitle">地球和平观想</strong>
-            <span id="wednesdayBody">为共同生活的地球，留下一段安静。</span>
+            <small id="wednesdayEyebrow">${copy.wednesdayDefaultEyebrow}</small>
+            <strong id="wednesdayTitle">${copy.wednesdayTitle}</strong>
+            <span id="wednesdayBody">${copy.wednesdayBody}</span>
           </span>
-          <span class="wednesday-action">开始 7 分钟 <span aria-hidden="true">→</span></span>
+          <span class="wednesday-action">${copy.wednesdayAction} <span aria-hidden="true">→</span></span>
         </button>
       </section>
     </main>
 
     <footer class="app-footer">
-      <span>昼夜分布依据当前时间计算</span>
+      <span>${copy.footerEphemeris}</span>
       <span aria-hidden="true">·</span>
-      <span>地表影像非实时卫星照片</span>
+      <span>${copy.footerImagery}</span>
     </footer>
   </div>
 
-  <section class="meditation-overlay" id="meditationOverlay" hidden aria-label="冥想练习">
+  <section class="meditation-overlay" id="meditationOverlay" hidden aria-label="${copy.practiceKicker}">
     <div class="meditation-topbar">
-      <button class="round-control" id="endSessionButton" type="button" aria-label="结束练习">${ICONS.close}</button>
+      <button class="round-control" id="endSessionButton" type="button" aria-label="${copy.endSession}">${ICONS.close}</button>
       <div class="session-title-wrap">
-        <span id="sessionDuration">7 分钟</span>
-        <strong id="sessionTitle">拥抱地球</strong>
+        <span id="sessionDuration">${formatDurationLabel(7)}</span>
+        <strong id="sessionTitle">${initialPlans[1]!.title}</strong>
       </div>
       <div class="meditation-top-actions">
-        <button class="round-control" id="voiceButton" type="button" aria-label="开启或关闭语音引导">${ICONS.voice}</button>
-        <button class="round-control" id="soundButton" type="button" aria-label="开启或关闭环境声音">${ICONS.sound}</button>
+        <button class="round-control" id="voiceButton" type="button" aria-label="${copy.voiceToggle}">${ICONS.voice}</button>
+        <button class="round-control" id="soundButton" type="button" aria-label="${copy.soundToggle}">${ICONS.sound}</button>
       </div>
     </div>
 
@@ -139,15 +176,15 @@ app.innerHTML = `
         <span class="breath-ring ring-two"></span>
         <span class="breath-core"></span>
       </div>
-      <p class="breath-label" id="breathLabel">自然呼吸</p>
-      <p class="guidance-text" id="guidanceText" aria-live="polite">让身体被此刻稳稳承托。</p>
+      <p class="breath-label" id="breathLabel">${copy.naturalBreath}</p>
+      <p class="guidance-text" id="guidanceText" aria-live="polite">${copy.initialGuidance}</p>
     </div>
 
     <div class="meditation-controls">
       <div class="progress-track" aria-hidden="true"><span id="progressBar"></span></div>
       <div class="timer-row">
         <span id="elapsedTime">00:00</span>
-        <button class="pause-button" id="pauseButton" type="button">${ICONS.pause}<span>暂停</span></button>
+        <button class="pause-button" id="pauseButton" type="button">${ICONS.pause}<span>${copy.pause}</span></button>
         <span id="remainingTime">07:00</span>
       </div>
     </div>
@@ -155,56 +192,57 @@ app.innerHTML = `
 
   <dialog class="app-dialog settings-dialog" id="settingsDialog">
     <div class="dialog-header">
-      <div><p class="section-kicker">偏好设置</p><h2>让体验更贴近你</h2></div>
-      <button class="icon-button dialog-close" type="button" aria-label="关闭设置">${ICONS.close}</button>
+      <div><p class="section-kicker">${copy.settingsKicker}</p><h2>${copy.settingsTitle}</h2></div>
+      <button class="icon-button dialog-close" type="button" aria-label="${copy.closeSettings}">${ICONS.close}</button>
     </div>
     <div class="dialog-body settings-body">
       <section class="setting-section">
-        <div class="setting-title">${ICONS.location}<div><strong>地球视角</strong><span>位置仅保存在当前设备，不会上传。</span></div></div>
-        <div class="current-location-card"><span>当前</span><strong id="settingsLocationLabel">--</strong></div>
-        <button class="secondary-button full-width" id="gpsButton" type="button">${ICONS.target}<span>使用设备位置</span></button>
-        <label class="field-label" for="citySelect">或选择城市</label>
-        <select id="citySelect" class="form-control"><option value="">选择一个城市…</option></select>
+        <div class="setting-title">${ICONS.location}<div><strong>${copy.earthViewTitle}</strong><span>${copy.earthViewHelp}</span></div></div>
+        <div class="current-location-card"><span>${copy.current}</span><strong id="settingsLocationLabel">--</strong></div>
+        <button class="secondary-button full-width" id="gpsButton" type="button">${ICONS.target}<span>${copy.useDeviceLocation}</span></button>
+        <label class="field-label" for="citySelect">${copy.cityLabel}</label>
+        <select id="citySelect" class="form-control"><option value="">${copy.cityPlaceholder}</option></select>
         <details class="manual-location">
-          <summary>手动输入经纬度</summary>
+          <summary>${copy.manualCoordinates}</summary>
           <div class="coordinate-grid">
-            <label>纬度<input class="form-control" id="latitudeInput" type="number" min="-90" max="90" step="0.0001" /></label>
-            <label>经度<input class="form-control" id="longitudeInput" type="number" min="-180" max="180" step="0.0001" /></label>
+            <label>${copy.latitude}<input class="form-control" id="latitudeInput" type="number" min="-90" max="90" step="0.0001" /></label>
+            <label>${copy.longitude}<input class="form-control" id="longitudeInput" type="number" min="-180" max="180" step="0.0001" /></label>
           </div>
-          <button class="secondary-button full-width" id="applyCoordinatesButton" type="button">应用坐标</button>
+          <button class="secondary-button full-width" id="applyCoordinatesButton" type="button">${copy.applyCoordinates}</button>
         </details>
       </section>
 
       <section class="setting-section">
-        <div class="setting-title">${ICONS.globe}<div><strong>星期三提醒</strong><span>网页打开或在后台可用时提醒；原生推送需后续封装。</span></div></div>
-        <label class="setting-row"><span><strong>开启本地提醒</strong><small id="notificationStatus">尚未开启</small></span><input id="reminderToggle" type="checkbox" class="switch-input" /><span class="switch" aria-hidden="true"></span></label>
-        <label class="time-setting"><span>提醒时间</span><input class="form-control" id="reminderTime" type="time" /></label>
+        <div class="setting-title">${ICONS.globe}<div><strong>${copy.reminderTitle}</strong><span>${copy.reminderHelp}</span></div></div>
+        <label class="setting-row"><span><strong>${copy.reminderEnabled}</strong><small id="notificationStatus">${copy.reminderOff}</small></span><input id="reminderToggle" type="checkbox" class="switch-input" /><span class="switch" aria-hidden="true"></span></label>
+        <label class="time-setting"><span>${copy.reminderTime}</span><input class="form-control" id="reminderTime" type="time" /></label>
       </section>
 
       <section class="setting-section">
-        <label class="setting-row"><span><strong>语音引导</strong><small>使用设备自带的中文语音</small></span><input id="voiceToggle" type="checkbox" class="switch-input" /><span class="switch" aria-hidden="true"></span></label>
-        <label class="setting-row"><span><strong>环境声音</strong><small>由浏览器实时生成，不加载音频文件</small></span><input id="ambientToggle" type="checkbox" class="switch-input" /><span class="switch" aria-hidden="true"></span></label>
-        <label class="setting-row"><span><strong>减少动态效果</strong><small>缩短镜头运动并降低呼吸动画</small></span><input id="motionToggle" type="checkbox" class="switch-input" /><span class="switch" aria-hidden="true"></span></label>
+        <label class="time-setting language-setting"><span><strong>${copy.languageTitle}</strong><small>${copy.languageHelp}</small></span><select id="languageSelect" class="form-control"><option value="zh"${settings.language === 'zh' ? ' selected' : ''}>中文</option><option value="en"${settings.language === 'en' ? ' selected' : ''}>English</option></select></label>
+        <label class="setting-row"><span><strong>${copy.voiceTitle}</strong><small>${copy.voiceHelp}</small></span><input id="voiceToggle" type="checkbox" class="switch-input" /><span class="switch" aria-hidden="true"></span></label>
+        <label class="setting-row"><span><strong>${copy.ambientTitle}</strong><small>${copy.ambientHelp}</small></span><input id="ambientToggle" type="checkbox" class="switch-input" /><span class="switch" aria-hidden="true"></span></label>
+        <label class="setting-row"><span><strong>${copy.motionTitle}</strong><small>${copy.motionHelp}</small></span><input id="motionToggle" type="checkbox" class="switch-input" /><span class="switch" aria-hidden="true"></span></label>
       </section>
 
       <section class="setting-section credits-section">
-        <strong>影像与内容说明</strong>
-        <p>白天地表：NASA/Goddard Space Flight Center Scientific Visualization Studio；夜间灯光：NASA/GSFC 与 NOAA/NGDC。云层为艺术化效果。引导词为本项目原创，不代表任何作者、出版社或机构背书。</p>
+        <strong>${copy.creditsTitle}</strong>
+        <p>${copy.creditsBody}</p>
       </section>
 
-      <button class="danger-text-button" id="clearHistoryButton" type="button">清除本机练习记录</button>
+      <button class="danger-text-button" id="clearHistoryButton" type="button">${copy.clearHistory}</button>
     </div>
   </dialog>
 
   <dialog class="app-dialog history-dialog" id="historyDialog">
     <div class="dialog-header">
-      <div><p class="section-kicker">练习记录</p><h2>你与地球相处的时刻</h2></div>
-      <button class="icon-button dialog-close" type="button" aria-label="关闭记录">${ICONS.close}</button>
+      <div><p class="section-kicker">${copy.historyKicker}</p><h2>${copy.historyTitle}</h2></div>
+      <button class="icon-button dialog-close" type="button" aria-label="${copy.closeHistory}">${ICONS.close}</button>
     </div>
     <div class="dialog-body">
       <div class="history-summary">
-        <div><strong id="historyCount">0</strong><span>本周练习</span></div>
-        <div><strong id="historyMinutes">0</strong><span>本周分钟</span></div>
+        <div><strong id="historyCount">0</strong><span>${copy.weekPractice}</span></div>
+        <div><strong id="historyMinutes">0</strong><span>${copy.weekMinutes}</span></div>
       </div>
       <div class="history-list" id="historyList"></div>
     </div>
@@ -212,17 +250,17 @@ app.innerHTML = `
 
   <dialog class="app-dialog mood-dialog" id="moodDialog">
     <div class="dialog-header compact">
-      <div><p class="section-kicker">练习完成</p><h2>此刻，你有什么感受？</h2></div>
-      <button class="icon-button dialog-close" type="button" aria-label="跳过记录感受">${ICONS.close}</button>
+      <div><p class="section-kicker">${copy.moodKicker}</p><h2>${copy.moodTitle}</h2></div>
+      <button class="icon-button dialog-close" type="button" aria-label="${copy.skipMood}">${ICONS.close}</button>
     </div>
     <div class="dialog-body">
-      <p class="mood-note">没有“正确”的感受，选择最接近的一项即可。</p>
+      <p class="mood-note">${copy.moodNote}</p>
       <div class="mood-grid">
-        <button type="button" data-mood="平静"><span>◌</span>平静</button>
-        <button type="button" data-mood="温暖"><span>☼</span>温暖</button>
-        <button type="button" data-mood="开阔"><span>∞</span>开阔</button>
-        <button type="button" data-mood="沉重"><span>◐</span>沉重</button>
-        <button type="button" data-mood="无明显变化"><span>—</span>无明显变化</button>
+        <button type="button" data-mood="calm"><span>◌</span>${copy.moods.calm}</button>
+        <button type="button" data-mood="warm"><span>☼</span>${copy.moods.warm}</button>
+        <button type="button" data-mood="spacious"><span>∞</span>${copy.moods.spacious}</button>
+        <button type="button" data-mood="heavy"><span>◐</span>${copy.moods.heavy}</button>
+        <button type="button" data-mood="unchanged"><span>—</span>${copy.moods.unchanged}</button>
       </div>
     </div>
   </dialog>
@@ -239,7 +277,6 @@ function query<T extends Element>(selector: string, root: ParentNode = document)
 const appShell = query<HTMLDivElement>('#appShell');
 const earthStage = query<HTMLDivElement>('#earthStage');
 const earth = createEarthView(earthStage);
-let settings: AppSettings = loadSettings();
 earth.setReduceMotion(settings.reduceMotion);
 earth.setLocation(settings.lat, settings.lon, false);
 
@@ -262,6 +299,7 @@ const moodDialog = query<HTMLDialogElement>('#moodDialog');
 const citySelect = query<HTMLSelectElement>('#citySelect');
 const latitudeInput = query<HTMLInputElement>('#latitudeInput');
 const longitudeInput = query<HTMLInputElement>('#longitudeInput');
+const languageSelect = query<HTMLSelectElement>('#languageSelect');
 const reminderToggle = query<HTMLInputElement>('#reminderToggle');
 const reminderTime = query<HTMLInputElement>('#reminderTime');
 const voiceToggle = query<HTMLInputElement>('#voiceToggle');
@@ -269,12 +307,46 @@ const ambientToggle = query<HTMLInputElement>('#ambientToggle');
 const motionToggle = query<HTMLInputElement>('#motionToggle');
 const notificationStatus = query<HTMLElement>('#notificationStatus');
 
-for (const [index, preset] of LOCATION_PRESETS.entries()) {
-  const option = document.createElement('option');
-  option.value = String(index);
-  option.textContent = preset.name;
-  citySelect.append(option);
+document.documentElement.lang = settings.language === 'en' ? 'en' : 'zh-CN';
+document.title = text().documentTitle;
+
+function renderCityOptions(): void {
+  const selectedValue = citySelect.value;
+  citySelect.replaceChildren();
+  const placeholder = document.createElement('option');
+  placeholder.value = '';
+  placeholder.textContent = text().cityPlaceholder;
+  citySelect.append(placeholder);
+  for (const [index, preset] of LOCATION_PRESETS.entries()) {
+    const option = document.createElement('option');
+    option.value = String(index);
+    option.textContent = presetName(preset);
+    citySelect.append(option);
+  }
+  citySelect.value = selectedValue;
 }
+
+function matchingPreset(): (typeof LOCATION_PRESETS)[number] | undefined {
+  return LOCATION_PRESETS.find(
+    (preset) => Math.abs(preset.lat - settings.lat) < 0.001 && Math.abs(preset.lon - settings.lon) < 0.001
+  );
+}
+
+function displayLocationLabel(): string {
+  const copy = text();
+  const preset = matchingPreset();
+  if (settings.locationSource === 'gps') return `${copy.myLocation} · ${coordinateLabel(settings.lat, settings.lon)}`;
+  if (settings.locationSource === 'manual') return `${copy.manualLocation} · ${coordinateLabel(settings.lat, settings.lon)}`;
+  if (preset) {
+    const prefix = settings.locationSource === 'default' ? copy.timezonePerspective : '';
+    return prefix ? `${prefix} · ${presetName(preset)}` : presetName(preset);
+  }
+  return settings.locationSource === 'default'
+    ? copy.inferredPerspective
+    : settings.locationLabel;
+}
+
+renderCityOptions();
 
 function openDialog(dialog: HTMLDialogElement): void {
   if (typeof dialog.showModal === 'function') dialog.showModal();
@@ -322,77 +394,83 @@ function saveAndApplySettings(recenter = false): void {
 }
 
 function notificationStateText(): string {
-  if (!('Notification' in window)) return '当前浏览器不支持系统通知，将使用应用内提醒';
-  if (!window.isSecureContext) return '需通过 HTTPS 或本机服务器启用系统通知';
-  if (Notification.permission === 'granted') return '系统通知已允许';
-  if (Notification.permission === 'denied') return '系统通知已被浏览器阻止';
-  return '开启后将请求通知权限';
+  const copy = text();
+  if (!('Notification' in window)) return copy.notificationUnsupported;
+  if (!window.isSecureContext) return copy.notificationInsecure;
+  if (Notification.permission === 'granted') return copy.notificationGranted;
+  if (Notification.permission === 'denied') return copy.notificationDenied;
+  return copy.notificationDefault;
 }
 
 function syncSettingsUi(): void {
-  locationLabel.textContent = settings.locationLabel;
-  settingsLocationLabel.textContent = `${settings.locationLabel} · ${coordinateLabel(settings.lat, settings.lon)}`;
+  renderCityOptions();
+  const copy = text();
+  const locationText = displayLocationLabel();
+  locationLabel.textContent = locationText;
+  settingsLocationLabel.textContent = `${locationText} · ${coordinateLabel(settings.lat, settings.lon)}`;
   latitudeInput.value = settings.lat.toFixed(4);
   longitudeInput.value = settings.lon.toFixed(4);
+  languageSelect.value = settings.language;
   reminderToggle.checked = settings.reminderEnabled;
   reminderTime.value = settings.reminderTime;
   voiceToggle.checked = settings.voiceEnabled;
   ambientToggle.checked = settings.ambientEnabled;
   motionToggle.checked = settings.reduceMotion;
-  notificationStatus.textContent = settings.reminderEnabled ? notificationStateText() : '尚未开启';
+  notificationStatus.textContent = settings.reminderEnabled ? notificationStateText() : copy.reminderOff;
 
-  const matchingIndex = LOCATION_PRESETS.findIndex(
-    (preset) => Math.abs(preset.lat - settings.lat) < 0.001 && Math.abs(preset.lon - settings.lon) < 0.001
-  );
+  const matchingIndex = LOCATION_PRESETS.findIndex((preset) => preset === matchingPreset());
   citySelect.value = matchingIndex >= 0 ? String(matchingIndex) : '';
 }
 
 function nextWednesdayText(now: Date): string {
+  const copy = text();
   const today = now.getDay();
   const days = (3 - today + 7) % 7 || 7;
-  if (days === 1) return '明天';
-  return `${days} 天后`;
+  if (days === 1) return copy.tomorrow;
+  return copy.daysLater(days);
 }
 
 function updateClock(): void {
+  const copy = text();
   const now = new Date();
-  localTime.textContent = new Intl.DateTimeFormat('zh-CN', {
+  localTime.textContent = new Intl.DateTimeFormat(copy.locale, {
     hour: '2-digit', minute: '2-digit', hour12: false
   }).format(now);
   localTime.dateTime = now.toISOString();
-  localDate.textContent = new Intl.DateTimeFormat('zh-CN', {
+  localDate.textContent = new Intl.DateTimeFormat(copy.locale, {
     month: 'long', day: 'numeric', weekday: 'long'
   }).format(now);
-  timezoneLabel.textContent = Intl.DateTimeFormat().resolvedOptions().timeZone || '本地时间';
+  timezoneLabel.textContent = Intl.DateTimeFormat().resolvedOptions().timeZone || copy.fallbackTimeZone;
 
   const hour = now.getHours();
-  const timePhrase = hour < 5 ? '夜色很深' : hour < 9 ? '新的一天正在展开' : hour < 12 ? '上午正在继续' : hour < 17 ? '白日缓缓流动' : hour < 20 ? '光线正在改变' : '夜晚已经到来';
+  const timePhrase = hour < 5 ? copy.timePhrases.deepNight : hour < 9 ? copy.timePhrases.morning : hour < 12 ? copy.timePhrases.lateMorning : hour < 17 ? copy.timePhrases.afternoon : hour < 20 ? copy.timePhrases.evening : copy.timePhrases.night;
   const state = earth.getDayState();
   const statePhrase = state === 'day'
-    ? '你所在的位置此刻沐浴在日光中。'
+    ? copy.dayState.day
     : state === 'night'
-      ? '你所在的位置此刻位于地球的夜侧。'
-      : '你所在的位置正接近晨昏交界。';
-  nowLine.textContent = `${timePhrase}。${statePhrase}`;
+      ? copy.dayState.night
+      : copy.dayState.twilight;
+  nowLine.textContent = settings.language === 'en' ? `${timePhrase}. ${statePhrase}` : `${timePhrase}。${statePhrase}`;
 
   if (now.getDay() === 3) {
-    weekdayTag.textContent = '星期三 · 地球和平观想';
+    weekdayTag.textContent = copy.wednesdayTodayEyebrow;
     wednesdayCard.classList.add('is-today');
-    wednesdayEyebrow.textContent = '今天是星期三';
-    wednesdayTitle.textContent = '一起想象和平美好的地球';
-    wednesdayBody.textContent = '从你所在的地方，向整颗星球送出善意。';
+    wednesdayEyebrow.textContent = copy.todayWednesday;
+    wednesdayTitle.textContent = copy.wednesdayTodayTitle;
+    wednesdayBody.textContent = copy.wednesdayTodayBody;
   } else {
-    weekdayTag.textContent = '此刻 · 真实昼夜';
+    weekdayTag.textContent = copy.heroEyebrow;
     wednesdayCard.classList.remove('is-today');
-    wednesdayEyebrow.textContent = `${nextWednesdayText(now)} · 星期三`;
-    wednesdayTitle.textContent = '地球和平观想';
-    wednesdayBody.textContent = '为共同生活的地球，留下一段安静。';
+    wednesdayEyebrow.textContent = `${nextWednesdayText(now)} · ${copy.wednesday}`;
+    wednesdayTitle.textContent = copy.wednesdayTitle;
+    wednesdayBody.textContent = copy.wednesdayBody;
   }
 }
 
 function updateStats(): void {
+  const copy = text();
   const stats = getWeekStats();
-  weekStats.textContent = stats.count ? `本周 ${stats.count} 次 · ${stats.minutes} 分钟` : '本周尚未练习';
+  weekStats.textContent = stats.count ? copy.weekStats(stats.count, stats.minutes) : copy.weekStatsEmpty;
 }
 
 function dateKey(date: Date): string {
@@ -404,6 +482,7 @@ function dateKey(date: Date): string {
 
 function checkWednesdayReminder(): void {
   if (!settings.reminderEnabled) return;
+  const copy = text();
   const now = new Date();
   if (now.getDay() !== 3) return;
   const [hourText = '20', minuteText = '30'] = settings.reminderTime.split(':');
@@ -412,27 +491,28 @@ function checkWednesdayReminder(): void {
   const key = dateKey(now);
   if (currentMinutes < reminderMinutes || getLastReminderDate() === key) return;
 
-  const title = '此刻地球 · 星期三';
-  const body = '留 7 分钟，看一看我们共同生活的地球。';
+  const title = copy.notificationTitle;
+  const body = copy.notificationBody;
   if ('Notification' in window && window.isSecureContext && Notification.permission === 'granted') {
     new Notification(title, { body, icon: './icons/icon-192.png', tag: 'earth-wednesday' });
   }
-  showToast(`${title}：${body}`, 5000);
+  showToast(settings.language === 'en' ? `${title}: ${body}` : `${title}：${body}`, 5000);
   setLastReminderDate(key);
 }
 
 async function useDeviceLocation(): Promise<void> {
   const buttons = [query<HTMLButtonElement>('#locationButton'), query<HTMLButtonElement>('#gpsButton')];
+  const copy = text();
   if (!('geolocation' in navigator)) {
-    showToast('当前浏览器不支持定位，请在设置中选择城市。');
+    showToast(copy.geolocationUnsupported);
     return;
   }
   if (!window.isSecureContext && location.protocol !== 'file:') {
-    showToast('定位需要 HTTPS；你也可以直接选择城市。');
+    showToast(copy.geolocationInsecure);
     return;
   }
   for (const button of buttons) button.disabled = true;
-  showToast('正在获取大致位置…');
+  showToast(copy.geolocationLoading);
 
   navigator.geolocation.getCurrentPosition(
     (position) => {
@@ -440,18 +520,18 @@ async function useDeviceLocation(): Promise<void> {
         ...settings,
         lat: position.coords.latitude,
         lon: position.coords.longitude,
-        locationLabel: `我的位置 · ${coordinateLabel(position.coords.latitude, position.coords.longitude)}`,
+        locationLabel: `${copy.myLocation} · ${coordinateLabel(position.coords.latitude, position.coords.longitude)}`,
         locationSource: 'gps'
       };
       saveAndApplySettings(true);
       for (const button of buttons) button.disabled = false;
-      showToast('地球视角已回到你所在的位置。');
+      showToast(copy.geolocationApplied);
     },
     (error) => {
       for (const button of buttons) button.disabled = false;
       const message = error.code === error.PERMISSION_DENIED
-        ? '定位权限未开启，请选择城市或在浏览器设置中允许定位。'
-        : '暂时无法获取位置，请稍后重试或选择城市。';
+        ? copy.geolocationDenied
+        : copy.geolocationFailed;
       showToast(message, 4200);
     },
     { enableHighAccuracy: false, timeout: 12_000, maximumAge: 3_600_000 }
@@ -462,7 +542,7 @@ query<HTMLButtonElement>('#locationButton').addEventListener('click', () => void
 query<HTMLButtonElement>('#gpsButton').addEventListener('click', () => void useDeviceLocation());
 query<HTMLButtonElement>('#recenterButton').addEventListener('click', () => {
   earth.recenter();
-  showToast('已回到你所在的位置。');
+  showToast(text().recentered);
 });
 query<HTMLButtonElement>('#settingsButton').addEventListener('click', () => {
   syncSettingsUi();
@@ -477,40 +557,50 @@ citySelect.addEventListener('change', () => {
     ...settings,
     lat: preset.lat,
     lon: preset.lon,
-    locationLabel: preset.name,
+    locationLabel: presetName(preset),
     locationSource: 'preset'
   };
   saveAndApplySettings(true);
-  showToast(`地球视角已切换到${preset.name}。`);
+  showToast(text().cityApplied(presetName(preset)));
 });
 
 query<HTMLButtonElement>('#applyCoordinatesButton').addEventListener('click', () => {
+  const copy = text();
   const lat = Number(latitudeInput.value);
   const lon = Number(longitudeInput.value);
   if (!Number.isFinite(lat) || lat < -90 || lat > 90 || !Number.isFinite(lon) || lon < -180 || lon > 180) {
-    showToast('请输入有效的纬度（-90 至 90）和经度（-180 至 180）。', 4200);
+    showToast(copy.invalidCoordinates, 4200);
     return;
   }
   settings = {
     ...settings,
     lat,
     lon,
-    locationLabel: `手动位置 · ${coordinateLabel(lat, lon)}`,
+    locationLabel: `${copy.manualLocation} · ${coordinateLabel(lat, lon)}`,
     locationSource: 'manual'
   };
   saveAndApplySettings(true);
-  showToast('手动位置已应用。');
+  showToast(copy.manualApplied);
+});
+
+languageSelect.addEventListener('change', () => {
+  const nextLanguage = languageSelect.value === 'en' ? 'en' : 'zh';
+  if (settings.language === nextLanguage) return;
+  settings = { ...settings, language: nextLanguage };
+  saveSettings(settings);
+  window.location.reload();
 });
 
 reminderToggle.addEventListener('change', async () => {
+  const copy = text();
   const enabled = reminderToggle.checked;
   settings.reminderEnabled = enabled;
   if (enabled && 'Notification' in window && window.isSecureContext && Notification.permission === 'default') {
     const permission = await Notification.requestPermission();
-    if (permission === 'denied') showToast('系统通知被阻止；应用打开时仍会显示星期三提醒。', 4200);
-    else if (permission === 'granted') showToast('星期三提醒已开启。');
+    if (permission === 'denied') showToast(copy.notificationBlocked, 4200);
+    else if (permission === 'granted') showToast(copy.reminderEnabledToast);
   } else if (enabled) {
-    showToast('星期三应用内提醒已开启。');
+    showToast(copy.reminderInAppToast);
   }
   saveAndApplySettings();
   checkWednesdayReminder();
@@ -520,7 +610,7 @@ reminderTime.addEventListener('change', () => {
   if (/^([01]\d|2[0-3]):[0-5]\d$/.test(reminderTime.value)) {
     settings.reminderTime = reminderTime.value;
     saveAndApplySettings();
-    showToast(`提醒时间已设为 ${reminderTime.value}。`);
+    showToast(text().reminderTimeSet(reminderTime.value));
   }
 });
 
@@ -538,11 +628,11 @@ motionToggle.addEventListener('change', () => {
 });
 
 query<HTMLButtonElement>('#clearHistoryButton').addEventListener('click', () => {
-  if (!window.confirm('清除当前设备上的全部练习记录？此操作无法撤销。')) return;
+  if (!window.confirm(text().confirmClearHistory)) return;
   clearSessions();
   updateStats();
   renderHistory();
-  showToast('练习记录已清除。');
+  showToast(text().historyCleared);
 });
 
 function renderHistory(): void {
@@ -555,24 +645,26 @@ function renderHistory(): void {
   if (!sessions.length) {
     const empty = document.createElement('div');
     empty.className = 'empty-state';
-    empty.innerHTML = '<span>◯</span><strong>还没有练习记录</strong><p>完成一次观想后，它会安静地出现在这里。</p>';
+    const copy = text();
+    empty.innerHTML = `<span>◯</span><strong>${copy.emptyHistoryTitle}</strong><p>${copy.emptyHistoryBody}</p>`;
     list.append(empty);
     return;
   }
 
   for (const session of sessions.slice(0, 30)) {
+    const copy = text();
     const item = document.createElement('article');
     item.className = `history-item${session.completed ? '' : ' incomplete'}`;
     const date = new Date(session.startedAt);
     const title = document.createElement('div');
     title.className = 'history-item-title';
     const strong = document.createElement('strong');
-    strong.textContent = `${session.durationMinutes} 分钟 · ${getMeditationPlan(session.durationMinutes).title}`;
+    strong.textContent = `${formatDurationLabel(session.durationMinutes)} · ${getMeditationPlan(session.durationMinutes, settings.language).title}`;
     const status = document.createElement('span');
-    status.textContent = session.completed ? (session.mood ?? '已完成') : '提前结束';
+    status.textContent = session.completed ? (moodLabel(session.mood) ?? copy.completed) : copy.endedEarly;
     title.append(strong, status);
     const meta = document.createElement('p');
-    meta.textContent = new Intl.DateTimeFormat('zh-CN', {
+    meta.textContent = new Intl.DateTimeFormat(copy.locale, {
       month: 'long', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit'
     }).format(date);
     item.append(title, meta);
@@ -633,7 +725,8 @@ function getSessionElapsedMs(session: ActiveSession): number {
 function updateSessionButtons(): void {
   if (!activeSession) return;
   const paused = activeSession.pausedAtMs !== null;
-  pauseButton.innerHTML = paused ? `${ICONS.play}<span>继续</span>` : `${ICONS.pause}<span>暂停</span>`;
+  const copy = text();
+  pauseButton.innerHTML = paused ? `${ICONS.play}<span>${copy.resume}</span>` : `${ICONS.pause}<span>${copy.pause}</span>`;
   soundButton.innerHTML = activeSession.soundEnabled ? ICONS.sound : ICONS.mute;
   soundButton.classList.toggle('is-off', !activeSession.soundEnabled);
   voiceButton.classList.toggle('is-off', !activeSession.voiceEnabled);
@@ -657,8 +750,8 @@ function renderSessionFrame(): void {
     const cue = cues[cueIndex];
     if (cue) {
       guidanceText.textContent = cue.text;
-      breathLabel.textContent = cue.breath ?? '自然呼吸';
-      if (session.voiceEnabled && session.pausedAtMs === null) session.voice.speak(cue.text);
+      breathLabel.textContent = cue.breath ?? text().naturalBreath;
+      if (session.voiceEnabled && session.pausedAtMs === null) session.voice.speak(cue.text, settings.language);
     }
   }
 
@@ -683,7 +776,8 @@ function renderSessionFrame(): void {
 
 async function startSession(minutes: number): Promise<void> {
   if (activeSession) return;
-  const plan = getMeditationPlan(minutes);
+  const copy = text();
+  const plan = getMeditationPlan(minutes, settings.language);
   const ambient = new AmbientSound();
   const voice = new GuidanceVoice();
   const startedAtIso = new Date().toISOString();
@@ -701,10 +795,10 @@ async function startSession(minutes: number): Promise<void> {
     voiceEnabled: settings.voiceEnabled
   };
 
-  sessionDuration.textContent = `${plan.minutes} 分钟`;
+  sessionDuration.textContent = formatDurationLabel(plan.minutes);
   sessionTitle.textContent = plan.title;
-  guidanceText.textContent = plan.cues[0]?.text ?? '让身体安顿下来。';
-  breathLabel.textContent = plan.cues[0]?.breath ?? '自然呼吸';
+  guidanceText.textContent = plan.cues[0]?.text ?? copy.initialGuidance;
+  breathLabel.textContent = plan.cues[0]?.breath ?? copy.naturalBreath;
   elapsedTime.textContent = '00:00';
   remainingTime.textContent = formatTimer(sessionDurationSeconds(plan));
   progressBar.style.width = '0%';
@@ -732,7 +826,7 @@ async function startSession(minutes: number): Promise<void> {
   }
   window.setTimeout(() => {
     if (activeSession === session && session.voiceEnabled) {
-      voice.speak(plan.cues[0]?.text ?? '让身体安顿下来。');
+      voice.speak(plan.cues[0]?.text ?? copy.initialGuidance, settings.language);
     }
   }, settings.reduceMotion ? 100 : 900);
 }
@@ -770,14 +864,14 @@ async function finishSession(completed: boolean): Promise<void> {
   appShell.classList.remove('is-meditating');
   window.setTimeout(() => { meditationOverlay.hidden = true; }, 420);
   earth.endMeditation();
-  document.title = '此刻地球 · 地球正念观想';
+  document.title = text().documentTitle;
   updateStats();
 
   if (completed) {
-    showToast(`今天，你与地球安静相处了 ${session.plan.minutes} 分钟。`, 4200);
+    showToast(text().sessionComplete(session.plan.minutes), 4200);
     window.setTimeout(() => openDialog(moodDialog), 650);
   } else {
-    showToast('练习已结束。即使只停留片刻，也是一种照料。', 3800);
+    showToast(text().sessionEnded, 3800);
   }
 }
 
@@ -789,7 +883,7 @@ wednesdayCard.addEventListener('click', () => void startSession(7));
 query<HTMLButtonElement>('#endSessionButton').addEventListener('click', () => {
   if (!activeSession) return;
   const elapsed = getSessionElapsedMs(activeSession) / 1000;
-  if (elapsed > 15 && !window.confirm('现在结束本次练习吗？')) return;
+  if (elapsed > 15 && !window.confirm(text().confirmEndSession)) return;
   void finishSession(false);
 });
 
@@ -801,8 +895,8 @@ pauseButton.addEventListener('click', () => {
     session.voice.cancel();
     session.ambient.setMuted(true);
     guidanceText.dataset.beforePause = guidanceText.textContent ?? '';
-    guidanceText.textContent = '练习已暂停。准备好时，轻触继续。';
-    breathLabel.textContent = '暂停';
+    guidanceText.textContent = text().pausedGuidance;
+    breathLabel.textContent = text().pausedLabel;
     earth.setMeditationPaused(true);
   } else {
     session.pausedTotalMs += performance.now() - session.pausedAtMs;
@@ -810,8 +904,8 @@ pauseButton.addEventListener('click', () => {
     session.ambient.setMuted(!session.soundEnabled);
     const cue = session.plan.cues[session.cueIndex];
     guidanceText.textContent = cue?.text ?? guidanceText.dataset.beforePause ?? '';
-    breathLabel.textContent = cue?.breath ?? '自然呼吸';
-    if (session.voiceEnabled && cue) session.voice.speak(cue.text);
+    breathLabel.textContent = cue?.breath ?? text().naturalBreath;
+    if (session.voiceEnabled && cue) session.voice.speak(cue.text, settings.language);
     earth.setMeditationPaused(false);
   }
   updateSessionButtons();
@@ -840,7 +934,7 @@ voiceButton.addEventListener('click', () => {
   session.voice.setEnabled(session.voiceEnabled);
   if (session.voiceEnabled && session.pausedAtMs === null) {
     const cue = session.plan.cues[session.cueIndex];
-    if (cue) session.voice.speak(cue.text);
+    if (cue) session.voice.speak(cue.text, settings.language);
   }
   updateSessionButtons();
 });
@@ -851,7 +945,7 @@ for (const moodButton of document.querySelectorAll<HTMLButtonElement>('[data-moo
     if (pendingMoodRecordId && mood) updateSessionMood(pendingMoodRecordId, mood);
     pendingMoodRecordId = null;
     closeDialog(moodDialog);
-    showToast(mood === '无明显变化' ? '感受已记录。没有变化，也完全可以。' : `已记录：${mood ?? ''}`);
+    showToast(mood === 'unchanged' ? text().moodRecorded : text().moodRecordedWithValue(moodLabel(mood) ?? ''));
   });
 }
 
@@ -876,7 +970,7 @@ installButton.addEventListener('click', async () => {
 });
 window.addEventListener('appinstalled', () => {
   installButton.hidden = true;
-  showToast('“此刻地球”已安装到你的设备。');
+  showToast(text().installed);
 });
 
 if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
